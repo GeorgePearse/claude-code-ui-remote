@@ -33,13 +33,15 @@ export async function POST(req: Request) {
           dependencies: z.array(z.string()).describe('List of npm dependencies to install'),
         }),
         execute: async ({ code, dependencies }: { code: string, dependencies: string[] }) => {
+          const logs: string[] = [];
           try {
+            const onLog = (message: string) => logs.push(message);
             // Explicitly cast the result or ensuring it matches expected type
-            const url = await createGraphSandbox(code, dependencies);
-            return url;
+            const url = await createGraphSandbox(code, dependencies, onLog);
+            return { url, logs };
           } catch (error) {
             console.error("Sandbox error:", error);
-            return `Error generating graph: ${String(error)}`;
+            return { error: String(error), logs };
           }
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

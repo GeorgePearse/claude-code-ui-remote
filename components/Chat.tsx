@@ -63,8 +63,24 @@ export function Chat() {
                     // Check if it's our generate_graph tool
                     if (toolPart.toolName === 'generate_graph' || part.type === 'tool-generate_graph') {
                          if (toolPart.state === 'output-available' || toolPart.output) {
-                             const url = toolPart.output;
-                             if (typeof url === 'string' && url.startsWith('http')) {
+                             const output = toolPart.output;
+                             let url = '';
+                             let logs: string[] = [];
+                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                             let error = '';
+
+                             if (typeof output === 'string') {
+                                 url = output;
+                             } else if (output && typeof output === 'object') {
+                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                 url = (output as any).url;
+                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                 logs = (output as any).logs || [];
+                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                 error = (output as any).error;
+                             }
+
+                             if (url && url.startsWith('http')) {
                                  return (
                                      <div key={i} className="flex flex-col gap-2 mt-2">
                                         <p className="font-semibold text-xs opacity-75 mb-1">Generated Graph:</p>
@@ -73,15 +89,42 @@ export function Chat() {
                                             className="w-[800px] h-[600px] bg-white rounded-md border border-gray-300"
                                             title="Generated Graph"
                                         />
-                                        <a href={url} target="_blank" rel="noreferrer" className="text-xs underline opacity-70 hover:opacity-100">Open in new tab</a>
+                                        <div className="flex items-center gap-4">
+                                            <a href={url} target="_blank" rel="noreferrer" className="text-xs underline opacity-70 hover:opacity-100">Open in new tab</a>
+                                            {logs.length > 0 && (
+                                                <details className="text-xs text-gray-500">
+                                                    <summary className="cursor-pointer hover:text-gray-700">Show Build Logs</summary>
+                                                    <div className="mt-1 p-2 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                                        {logs.join('\n')}
+                                                    </div>
+                                                </details>
+                                            )}
+                                        </div>
                                      </div>
                                  );
+                             }
+
+                             if (error) {
+                                return (
+                                    <div key={i} className="flex flex-col gap-2 mt-2 text-red-500 text-xs">
+                                        <p className="font-semibold">Error generating graph:</p>
+                                        <p>{error}</p>
+                                        {logs.length > 0 && (
+                                            <details className="text-gray-500">
+                                                <summary className="cursor-pointer hover:text-gray-700">Show Build Logs</summary>
+                                                <div className="mt-1 p-2 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                                    {logs.join('\n')}
+                                                </div>
+                                            </details>
+                                        )}
+                                    </div>
+                                );
                              }
                          }
                          // While generating or if output is not a URL yet
                          return <div key={i} className="flex items-center gap-2 text-gray-500 italic text-xs mt-1">
                             <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>Generating graph...</span>
+                            <span>Building sandbox environment...</span>
                          </div>;
                     }
                   }

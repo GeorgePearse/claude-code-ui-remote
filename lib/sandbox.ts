@@ -1,9 +1,11 @@
 import { Sandbox } from '@e2b/code-interpreter';
 
-export async function createGraphSandbox(code: string, dependencies: string[]) {
+export async function createGraphSandbox(code: string, dependencies: string[], onLog?: (message: string) => void) {
   console.log('Starting sandbox creation...');
+  onLog?.('Starting sandbox creation...');
   const sandbox = await Sandbox.create();
   console.log('Sandbox created:', sandbox.sandboxId);
+  onLog?.('Sandbox created...');
 
   // 1. Write package.json
   const packageJson = {
@@ -124,10 +126,15 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
   // 8. Install dependencies
   console.log('Installing dependencies...');
-  await sandbox.commands.run('npm install');
+  onLog?.('Installing dependencies... (this may take a minute)');
+  await sandbox.commands.run('npm install', {
+    onStdout: (text) => onLog?.(text),
+    onStderr: (text) => onLog?.(text),
+  });
 
   // 9. Start Vite
   console.log('Starting dev server...');
+  onLog?.('Starting dev server...');
   await sandbox.commands.run('npm run dev -- --host', { background: true });
   
   // 10. Get URL
